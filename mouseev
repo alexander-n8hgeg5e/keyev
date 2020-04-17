@@ -6,6 +6,7 @@ from os import environ
 from sys import argv
 from time import time
 from Xlib.ext.xtest import fake_input
+from pylib.screen_utils.env import parse_screen_layout_env_var_v2
 
 
 ##################
@@ -88,6 +89,7 @@ class Key_event_handler_v2():
         # home_display is the x-display/x-server with the
         # keyboard attached.
         display_strings=home_display_string,*display_strings
+        self.display_strings=display_strings
         self.displays=[]
         allready_created=[]
         for displaynr in outputnr2displaynr_list:
@@ -126,18 +128,43 @@ class Key_event_handler_v2():
 
         self.output_select_keybindings=output_select_keybindings
 
-        self.grab_switch_keys()
+        self.grab_mouse()
+
+        # TODO: remove redundancy with stuff above
+        self.screen_layout=parse_screen_layout_env_var_v2()
+        from pprint import pprint
+        pprint(self.screen_layout)
+
+        self.switch_positions = []
+        
+        # TODO: include checks
+        l=len(self.screen_layout)
+
+        # first switching instruction (pos,switch_to)
+        output=self.screen_layout[0]
+        self.switch_positions.append([(int(output['dim'][0])-1,1)])
+        # middle part
+        for i in range(1,l-1):
+            output=self.screen_layout[i]
+            self.switch_positions.append([(int(output['pos'][0]),i-1),(int(output['dim'][0])+int(output['pos'][0])-1,i+1)])
+        # end part
+        output=self.screen_layout[i]
+        self.switch_positions.append([(int(output['pos'][0]),l-1)])
+        pprint(self.switch_positions)
+        self.switch_disable=-1
+        self.switch_disable_pos=0
+
 
     def grab_switch_keys(self):
         self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
         self.root.grab_key(self.sw_keycodes[3],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
 
-    def grab_keyboard(self):
-        retcode=self.root.grab_keyboard(False,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
+    def grab_mouse(self):
+        retcode=self.root.grab_pointer(False,X.PointerMotionMask,X.GrabModeAsync,X.GrabModeAsync,X.NONE,X.NONE,X.CurrentTime)
         if not retcode==0:
             self.print_grab_error(retcode)
         self.displays[0].sync()
-        #print("grabbed keyboard")
+        print("grabbed pointer")
     
     def _is_display_switch(self,to_output_nr):
         o2d=self.outputnr2displaynr_list
@@ -156,8 +183,8 @@ class Key_event_handler_v2():
             #print("clearing keys",output_nr,i)
             self.fake_input(output_nr,X.KeyRelease,detail=i,msg="clear keys")
 
-    def fake_input(self, output_nr, event_type,detail=None,print=True,msg=""):
-        fake_input(self.displays[output_nr],event_type,detail=detail)
+    def fake_input(self, output_nr, event_type, detail=0,root=0,x=0,y=0,msg=""):
+        fake_input(self.displays[output_nr],event_type,detail=detail,root=root,x=x,y=y)
         self.print(event_type,detail,self.outputnr2displaynr_list[output_nr],msg)
 
 
@@ -166,28 +193,33 @@ class Key_event_handler_v2():
             # nothing to do
             return
 
-        if self._is_display_switch(output_nr):
-            if self._dsw_is_home_switch(output_nr):
-                self.displays[0].ungrab_keyboard(time=X.CurrentTime)
-                self.displays[0].sync()
-                #print("ungrabbed keyboard")
-                self.grab_switch_keys()
-            elif self._dsw_is_leave_home_switch():
-                self.grab_keyboard()
-
         # send keyevents to switch to output
         if not self.output_select_keybindings is None:
             for keybind in self.output_select_keybindings[output_nr]:
                 self.fake_input(output_nr,keybind['event_type'],detail=keybind['keycode'],msg="output switch")
 
+        
+        self.switch_disable=self.current_output_nr
         self.current_output_nr=output_nr
 
-    def handle(self,keyeventcode,keycode,state,time):
-        swst=self.switch_modifer_state
-        if (state&swst==swst) and keycode in self.sw_keycodes:
-            self.switch2output(self.sw_keycodes.index(keycode))
-        else:
-            self.fake_input(self.current_output_nr,keyeventcode,detail=keycode,msg="handle")
+
+    def handle(self,event_type,time,x=0,y=0,detail=0):
+        if abs(self.switch_disable_pos-x) > 10:
+            self.switch_disable=-1
+        sw_poses=self.switch_positions[self.current_output_nr] 
+        #print(x,[range(sw_pos[0]-1,sw_pos[0]+1)])
+        for sw_pos in sw_poses:
+            if x in range(sw_pos[0]-1,sw_pos[0]+1):
+                #print("sw_disable",self.switch_disable)
+                if not self.switch_disable==sw_pos[1]:
+                    print("switch2",sw_pos[1])
+                    self.switch_disable_pos=x
+
+                    self.switch2output(sw_pos[1])
+                continue
+
+        if self.current_output_nr in [1,3]:
+            self.fake_input(self.current_output_nr,event_type,detail=detail,x=x-int(self.screen_layout[self.current_output_nr]['pos'][0]),y=y,msg="handle")
             self.displays[self.current_output_nr].flush()
 
     def print(self,keyeventcode,keycode,target_display,msg):
@@ -210,11 +242,12 @@ class Key_event_handler_v2():
 def key_events_loop_v2(handler):
 
     def handle_key_event(event):
-        keyeventcode = event.type
-        keycode = event.detail
+        event_type = event.type
+        detail = event.detail
         time = event.time
-        keystatecode=event.state
-        handler.handle( keyeventcode, keycode, keystatecode , time)
+        x=event.root_x
+        y=event.root_y
+        handler.handle( event_type,time,x=x,y=y,detail=detail)
 
     # loop
     display=handler.displays[0]
@@ -278,7 +311,7 @@ if __name__=="__main__":
                                                 [0,1,0,1],
                                                 "esadc:0",
                                                 "skyscraper:0",
-                                                current_output_nr=2,
+                                                current_output_nr=0,
                                                 output_select_keybindings=output_select_keybindings
                                             ))
 
