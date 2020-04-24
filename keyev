@@ -30,286 +30,292 @@
 # Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 # Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
 
-from Xlib.display import Display
-from Xlib import X, XK, protocol, error
-from os import environ
-from sys import argv
-from time import time
-from Xlib.ext.xtest import fake_input
+from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp
 
-
-##################
-####    v2    ####
-##################
-class Key_event_handler_v2():
-    """
-    This is a keyevent handler.
-    Keyevents that come from the keyboard are processed
-    here and send to the active display/x-server.
-    The switching of the active display/x-server
-    is done here too.
-    Additionally the class can send keyevents to the windowmanagers
-    running on a display to switch to a different output on that display.
-    This is because one display/x-server can have multiple monitors
-    attached to it.
-    They are called outputs here.
-    As an example the overall structure can look like this:
-   
-               *----------*         *----------*
-               |computer_a|\       /|computer_b|
-              /*----------* \     / *----------*\
-             /               \___/__             \ <- monitor cable
-            /                   /   \             \
-    *------------* *------------* *------------* *------------*
-    | monitor_0  | | monitor_1  | | monitor_2  | | monitor_3  |
-    |            | |            | |            | |            |
-    *------------* *------------* *------------* *------------*
-          ||             ||             ||             ||
-
-    The monitors are connected like this:
-    computer_a : monitor_0 , monitor_2
-    computer_b : monitor_1 , monitor_3
-
-    On each computer runs an x-server that is called "display" here.
-    The monitors are called "outputs".
-    The user can switch via keybinding to a monitor.
-    This works in two steps.
-    Step 1 is the keyevents get redirected to the newly selected display.
-    Step 2 is sending an keyevent that instructs the windowmanger running on that display
-    (usually the wm is running on all the monitors attached to the display)
-
-    This keyevent is called "output_select_keybinding" and depends
-    on the configuration of the windowmanager and
-    is meant to be configured by the user during initialization of this class.
-    The  datastructure is a python list and the indicies are the output number. 
-    The list contains lists with dictionaries inside.
-    These lists are the lists of bindings.
-    One dictionary represents one keyevent.
-    All together it looks like this:
-    [
-     [{ 'keycode':55,'event_type' : X.KeyPress }, { 'keycode':55, 'event_type': X.KeyRelease},...], # output 0
-     [{...},{...}], # output 1
-     [{...},{...}], # output 2
-     [{...},{...}], # output 3
-    ]
-
-    Argument "outputnr2displaynr_list":
-    -----------------------------------
-    A list that defines which display is on which output.
-    The list indices are the output numbers.
-    Stored in the list are the display number, that are the positions
-    the displays were in the init argument list.
-    """
-    server_switch_state=0xC
-    sw_keycodes=[24,25,26,27]
-    grab_failcodes={str(X.GrabInvalidTime):"GrabInvalidTime",str(X.GrabFrozen):"GrabFrozen",str(X.GrabNotViewable):"GrabNotViewable",str(X.AlreadyGrabbed):"AlreadyGrabbed"}
+try:
+    from Xlib.display import Display
+    from Xlib import X, XK, protocol, error
+    from os import environ
+    from sys import argv
+    from time import time
+    from Xlib.ext.xtest import fake_input
     
-    def __init__(self,
-                 outputnr2displaynr_list,
-                 home_display_string,
-                 *display_strings
-                 ,current_output_nr=None,
-                 switch_modifier_keycodes=[105,108],
-                 switch_modifer_state=0xC,
-                 output_select_keybindings=None
-                ):
-        # Key event handler needs displays to send
-        # keyevents to.
-        # home_display is the x-display/x-server with the
-        # keyboard attached.
-        display_strings=home_display_string,*display_strings
-        self.displays=[]
-        allready_created=[]
-        for displaynr in outputnr2displaynr_list:
-            if not displaynr in allready_created:
-                self.displays.append(Display(display_strings[displaynr]))
-                allready_created.append(displaynr)
+    
+    ##################
+    ####    v2    ####
+    ##################
+    class Key_event_handler_v2():
+        """
+        This is a keyevent handler.
+        Keyevents that come from the keyboard are processed
+        here and send to the active display/x-server.
+        The switching of the active display/x-server
+        is done here too.
+        Additionally the class can send keyevents to the windowmanagers
+        running on a display to switch to a different output on that display.
+        This is because one display/x-server can have multiple monitors
+        attached to it.
+        They are called outputs here.
+        As an example the overall structure can look like this:
+       
+                   *----------*         *----------*
+                   |computer_a|\       /|computer_b|
+                  /*----------* \     / *----------*\
+                 /               \___/__             \ <- monitor cable
+                /                   /   \             \
+        *------------* *------------* *------------* *------------*
+        | monitor_0  | | monitor_1  | | monitor_2  | | monitor_3  |
+        |            | |            | |            | |            |
+        *------------* *------------* *------------* *------------*
+              ||             ||             ||             ||
+    
+        The monitors are connected like this:
+        computer_a : monitor_0 , monitor_2
+        computer_b : monitor_1 , monitor_3
+    
+        On each computer runs an x-server that is called "display" here.
+        The monitors are called "outputs".
+        The user can switch via keybinding to a monitor.
+        This works in two steps.
+        Step 1 is the keyevents get redirected to the newly selected display.
+        Step 2 is sending an keyevent that instructs the windowmanger running on that display
+        (usually the wm is running on all the monitors attached to the display)
+    
+        This keyevent is called "output_select_keybinding" and depends
+        on the configuration of the windowmanager and
+        is meant to be configured by the user during initialization of this class.
+        The  datastructure is a python list and the indicies are the output number. 
+        The list contains lists with dictionaries inside.
+        These lists are the lists of bindings.
+        One dictionary represents one keyevent.
+        All together it looks like this:
+        [
+         [{ 'keycode':55,'event_type' : X.KeyPress }, { 'keycode':55, 'event_type': X.KeyRelease},...], # output 0
+         [{...},{...}], # output 1
+         [{...},{...}], # output 2
+         [{...},{...}], # output 3
+        ]
+    
+        Argument "outputnr2displaynr_list":
+        -----------------------------------
+        A list that defines which display is on which output.
+        The list indices are the output numbers.
+        Stored in the list are the display number, that are the positions
+        the displays were in the init argument list.
+        """
+        server_switch_state=0xC
+        sw_keycodes=[24,25,26,27]
+        grab_failcodes={str(X.GrabInvalidTime):"GrabInvalidTime",str(X.GrabFrozen):"GrabFrozen",str(X.GrabNotViewable):"GrabNotViewable",str(X.AlreadyGrabbed):"AlreadyGrabbed"}
+        
+        def __init__(self,
+                     outputnr2displaynr_list,
+                     home_display_string,
+                     *display_strings
+                     ,current_output_nr=None,
+                     switch_modifier_keycodes=[105,108],
+                     switch_modifer_state=0xC,
+                     output_select_keybindings=None
+                    ):
+            # Key event handler needs displays to send
+            # keyevents to.
+            # home_display is the x-display/x-server with the
+            # keyboard attached.
+            display_strings=home_display_string,*display_strings
+            self.displays=[]
+            allready_created=[]
+            for displaynr in outputnr2displaynr_list:
+                if not displaynr in allready_created:
+                    self.displays.append(Display(display_strings[displaynr]))
+                    allready_created.append(displaynr)
+                else:
+                    # use a display allready created
+                    for i in range(len(outputnr2displaynr_list)):
+                        if outputnr2displaynr_list[i] == displaynr:
+                            # got output_nr "i" that has the display
+                            self.displays.append(self.displays[i])
+                            break
+    
+    
+            #self.screen=self.target_display.screen()
+            #self.root=self.screen.root
+    
+            # every display can have multiple outputs
+            # the current_output_nr variable holds the state
+            self.current_output_nr=current_output_nr
+    
+            # this is the window on the home display
+            #self.grab_window = self.displays[0].get_input_focus()._data['focus']
+    
+            # this list defines what display is on what output
+            # list indices are the output numbers
+            # stored in the list are the display number, as
+            # it was in the init argument list
+            self.outputnr2displaynr_list=outputnr2displaynr_list
+    
+            self.switch_modifer_state=switch_modifer_state
+            self.switch_modifier_keycodes=switch_modifier_keycodes
+    
+            self.root=self.displays[0].screen().root
+    
+            self.output_select_keybindings=output_select_keybindings
+    
+            self.grab_switch_keys()
+    
+        def grab_switch_keys(self):
+            self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
+            self.root.grab_key(self.sw_keycodes[3],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
+    
+        def grab_keyboard(self):
+            retcode=self.root.grab_keyboard(False,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
+            if not retcode==0:
+                self.print_grab_error(retcode)
+            self.displays[0].sync()
+            #print("grabbed keyboard")
+        
+        def _is_display_switch(self,to_output_nr):
+            o2d=self.outputnr2displaynr_list
+            cur=self.current_output_nr
+            return o2d[cur] != o2d[to_output_nr]
+    
+        def _dsw_is_home_switch(self,to_output_nr):
+            return self.outputnr2displaynr_list[to_output_nr] == 0
+    
+        def _dsw_is_leave_home_switch(self):
+            return self.outputnr2displaynr_list[self.current_output_nr] == 0
+        
+        def clear_keys(self,output_nr):
+            for i in range(1,250):
+            #for i in self.sw_keycodes+self.switch_modifier_keycodes:
+                #print("clearing keys",output_nr,i)
+                self.fake_input(output_nr,X.KeyRelease,detail=i,msg="clear keys")
+    
+        def fake_input(self, output_nr, event_type,detail=None,print=True,msg=""):
+            fake_input(self.displays[output_nr],event_type,detail=detail)
+            self.print(event_type,detail,self.outputnr2displaynr_list[output_nr],msg)
+    
+    
+        def switch2output(self,output_nr):
+            if self.current_output_nr==output_nr:
+                # nothing to do
+                return
+    
+            if self._is_display_switch(output_nr):
+                if self._dsw_is_home_switch(output_nr):
+                    self.displays[0].ungrab_keyboard(time=X.CurrentTime)
+                    self.displays[0].sync()
+                    #print("ungrabbed keyboard")
+                    self.grab_switch_keys()
+                elif self._dsw_is_leave_home_switch():
+                    self.grab_keyboard()
+    
+            # send keyevents to switch to output
+            if not self.output_select_keybindings is None:
+                for keybind in self.output_select_keybindings[output_nr]:
+                    self.fake_input(output_nr,keybind['event_type'],detail=keybind['keycode'],msg="output switch")
+    
+            self.current_output_nr=output_nr
+    
+        def handle(self,keyeventcode,keycode,state,time):
+            swst=self.switch_modifer_state
+            if (state&swst==swst) and keycode in self.sw_keycodes:
+                self.switch2output(self.sw_keycodes.index(keycode))
             else:
-                # use a display allready created
-                for i in range(len(outputnr2displaynr_list)):
-                    if outputnr2displaynr_list[i] == displaynr:
-                        # got output_nr "i" that has the display
-                        self.displays.append(self.displays[i])
-                        break
-
-
-        #self.screen=self.target_display.screen()
-        #self.root=self.screen.root
-
-        # every display can have multiple outputs
-        # the current_output_nr variable holds the state
-        self.current_output_nr=current_output_nr
-
-        # this is the window on the home display
-        #self.grab_window = self.displays[0].get_input_focus()._data['focus']
-
-        # this list defines what display is on what output
-        # list indices are the output numbers
-        # stored in the list are the display number, as
-        # it was in the init argument list
-        self.outputnr2displaynr_list=outputnr2displaynr_list
-
-        self.switch_modifer_state=switch_modifer_state
-        self.switch_modifier_keycodes=switch_modifier_keycodes
-
-        self.root=self.displays[0].screen().root
-
-        self.output_select_keybindings=output_select_keybindings
-
-        self.grab_switch_keys()
-
-    def grab_switch_keys(self):
-        self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-        self.root.grab_key(self.sw_keycodes[3],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-
-    def grab_keyboard(self):
-        retcode=self.root.grab_keyboard(False,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-        if not retcode==0:
-            self.print_grab_error(retcode)
-        self.displays[0].sync()
-        #print("grabbed keyboard")
+                self.fake_input(self.current_output_nr,keyeventcode,detail=keycode,msg="handle")
+                self.displays[self.current_output_nr].flush()
     
-    def _is_display_switch(self,to_output_nr):
-        o2d=self.outputnr2displaynr_list
-        cur=self.current_output_nr
-        return o2d[cur] != o2d[to_output_nr]
-
-    def _dsw_is_home_switch(self,to_output_nr):
-        return self.outputnr2displaynr_list[to_output_nr] == 0
-
-    def _dsw_is_leave_home_switch(self):
-        return self.outputnr2displaynr_list[self.current_output_nr] == 0
+        def print(self,keyeventcode,keycode,target_display,msg):
+            formatstring="{:<5n} {:>15s} {:3n} {:s}"
+            if keyeventcode == X.KeyPress:
+                m0="KeyPress"
+            else:
+                m0="KeyRelease"
+            #print(formatstring.format(target_display,m0,keycode,msg))
     
-    def clear_keys(self,output_nr):
-        for i in range(1,250):
-        #for i in self.sw_keycodes+self.switch_modifier_keycodes:
-            #print("clearing keys",output_nr,i)
-            self.fake_input(output_nr,X.KeyRelease,detail=i,msg="clear keys")
-
-    def fake_input(self, output_nr, event_type,detail=None,print=True,msg=""):
-        fake_input(self.displays[output_nr],event_type,detail=detail)
-        self.print(event_type,detail,self.outputnr2displaynr_list[output_nr],msg)
-
-
-    def switch2output(self,output_nr):
-        if self.current_output_nr==output_nr:
-            # nothing to do
-            return
-
-        if self._is_display_switch(output_nr):
-            if self._dsw_is_home_switch(output_nr):
-                self.displays[0].ungrab_keyboard(time=X.CurrentTime)
-                self.displays[0].sync()
-                #print("ungrabbed keyboard")
-                self.grab_switch_keys()
-            elif self._dsw_is_leave_home_switch():
-                self.grab_keyboard()
-
-        # send keyevents to switch to output
-        if not self.output_select_keybindings is None:
-            for keybind in self.output_select_keybindings[output_nr]:
-                self.fake_input(output_nr,keybind['event_type'],detail=keybind['keycode'],msg="output switch")
-
-        self.current_output_nr=output_nr
-
-    def handle(self,keyeventcode,keycode,state,time):
-        swst=self.switch_modifer_state
-        if (state&swst==swst) and keycode in self.sw_keycodes:
-            self.switch2output(self.sw_keycodes.index(keycode))
-        else:
-            self.fake_input(self.current_output_nr,keyeventcode,detail=keycode,msg="handle")
-            self.displays[self.current_output_nr].flush()
-
-    def print(self,keyeventcode,keycode,target_display,msg):
-        formatstring="{:<5n} {:>15s} {:3n} {:s}"
-        if keyeventcode == X.KeyPress:
-            m0="KeyPress"
-        else:
-            m0="KeyRelease"
-        #print(formatstring.format(target_display,m0,keycode,msg))
-
-    def print_grab_error(self,retcode):
-        if retcode in [ int(i) for i in self.grab_failcodes.keys() ]:                          
-            pass
-            #print("failed to grab keyboard, code = "+self.grab_failcodes[str(retcode)])
-        else:
-            #print("failed to grab keyboard, code = "+grab_failcodes[str(retcode)])
-            pass
-
-
-def key_events_loop_v2(handler):
-
-    def handle_key_event(event):
-        keyeventcode = event.type
-        keycode = event.detail
-        time = event.time
-        keystatecode=event.state
-        handler.handle( keyeventcode, keycode, keystatecode , time)
-
-    # loop
-    display=handler.displays[0]
-    while True:
-        event = display.next_event()
-        if event is None or not hasattr(event, 'detail'):
-            continue
-        else:
-            handle_key_event(event)
-
-if __name__=="__main__":
-    #display.keysym_to_keycode(XK.string_to_keysym("1"))
-
-    kc_1 = 10
-    kc_2 = 11
-    kc_3 = 12
-    kc_4 = 13
-   # kc_q = 24
-   # kc_w = 25
-   # kc_e = 26
-   # kc_r = 27
-    kc_rctrl = 105
-    kc_ralt  = 108
-
-    output_0_keybindings=[
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
-            { 'keycode':kc_1,     'event_type' : X.KeyPress   },
-            { 'keycode':kc_1,     'event_type' : X.KeyRelease   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
-                         ]  
-    output_2_keybindings=[
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
-            { 'keycode':kc_3,     'event_type' : X.KeyPress   },
-            { 'keycode':kc_3,     'event_type' : X.KeyRelease   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
-                         ] 
-
-    output_1_keybindings=[
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
-            { 'keycode':kc_2,     'event_type' : X.KeyPress   },
-            { 'keycode':kc_2,     'event_type' : X.KeyRelease   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
-                         ]  
-    output_3_keybindings=[
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
-            { 'keycode':kc_4,     'event_type' : X.KeyPress   },
-            { 'keycode':kc_4,     'event_type' : X.KeyRelease   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
-                         ]  
-    output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
+        def print_grab_error(self,retcode):
+            if retcode in [ int(i) for i in self.grab_failcodes.keys() ]:                          
+                pass
+                #print("failed to grab keyboard, code = "+self.grab_failcodes[str(retcode)])
+            else:
+                #print("failed to grab keyboard, code = "+grab_failcodes[str(retcode)])
+                pass
     
-    key_events_loop_v2( Key_event_handler_v2(
-                                                [0,1,0,1],
-                                                "esadc:0",
-                                                "skyscraper:0",
-                                                current_output_nr=2,
-                                                output_select_keybindings=output_select_keybindings
-                                            ))
+    
+    def key_events_loop_v2(handler):
+    
+        def handle_key_event(event):
+            keyeventcode = event.type
+            keycode = event.detail
+            time = event.time
+            keystatecode=event.state
+            handler.handle( keyeventcode, keycode, keystatecode , time)
+    
+        # loop
+        display=handler.displays[0]
+        while True:
+            event = display.next_event()
+            if event is None or not hasattr(event, 'detail'):
+                continue
+            else:
+                handle_key_event(event)
+    
+    if __name__=="__main__":
+        #display.keysym_to_keycode(XK.string_to_keysym("1"))
+    
+        kc_1 = 10
+        kc_2 = 11
+        kc_3 = 12
+        kc_4 = 13
+       # kc_q = 24
+       # kc_w = 25
+       # kc_e = 26
+       # kc_r = 27
+        kc_rctrl = 105
+        kc_ralt  = 108
+    
+        output_0_keybindings=[
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
+                { 'keycode':kc_1,     'event_type' : X.KeyPress   },
+                { 'keycode':kc_1,     'event_type' : X.KeyRelease   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
+                             ]  
+        output_2_keybindings=[
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
+                { 'keycode':kc_3,     'event_type' : X.KeyPress   },
+                { 'keycode':kc_3,     'event_type' : X.KeyRelease   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
+                             ] 
+    
+        output_1_keybindings=[
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
+                { 'keycode':kc_2,     'event_type' : X.KeyPress   },
+                { 'keycode':kc_2,     'event_type' : X.KeyRelease   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
+                             ]  
+        output_3_keybindings=[
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
+                { 'keycode':kc_4,     'event_type' : X.KeyPress   },
+                { 'keycode':kc_4,     'event_type' : X.KeyRelease   },
+                { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
+                { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
+                             ]  
+        output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
+        
+        key_events_loop_v2( Key_event_handler_v2(
+                                                    [0,1,0,1],
+                                                    "esadc:0",
+                                                    "skyscraper:0",
+                                                    current_output_nr=2,
+                                                    output_select_keybindings=output_select_keybindings
+                                                ))
+    
+except Exception as e:
+    warn_exp(e,with_traceback=True)
 
 # vim: set foldmethod=indent foldlevel=1 foldnestmax=2 :
