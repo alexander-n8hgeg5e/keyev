@@ -1,0 +1,85 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_OUTPUT_MODE	u-ctags	/u-ctags or e-ctags/
+!_TAG_PROGRAM_AUTHOR	Universal Ctags Team	//
+!_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
+!_TAG_PROGRAM_URL	https://ctags.io/	/official site/
+!_TAG_PROGRAM_VERSION	0.0.0	//
+HYSTERESIS	mouseev	/^HYSTERESIS=50$/;"	v
+Key_event_handler_v2	keyev	/^    class Key_event_handler_v2():$/;"	c
+Key_event_handler_v2	mouseev	/^class Key_event_handler_v2():$/;"	c
+__init__	keyev	/^        def __init__(self,$/;"	m	class:Key_event_handler_v2
+__init__	mouseev	/^    def __init__(self,$/;"	m	class:Key_event_handler_v2
+_calc_input_area	mouseev	/^    def _calc_input_area(self):$/;"	m	class:Key_event_handler_v2
+_calc_switching_table	mouseev	/^    def _calc_switching_table(self):$/;"	m	class:Key_event_handler_v2
+_calc_virtual_pointer_area	mouseev	/^    def _calc_virtual_pointer_area(self):$/;"	m	class:Key_event_handler_v2
+_calc_warp_pos	mouseev	/^    def _calc_warp_pos(self):$/;"	m	class:Key_event_handler_v2
+_dsw_is_home_switch	keyev	/^        def _dsw_is_home_switch(self,to_output_nr):$/;"	m	class:Key_event_handler_v2
+_dsw_is_leave_home_switch	keyev	/^        def _dsw_is_leave_home_switch(self):$/;"	m	class:Key_event_handler_v2
+_dsw_is_leave_home_switch	mouseev	/^    def _dsw_is_leave_home_switch(self):$/;"	m	class:Key_event_handler_v2
+_gen_displays_list	mouseev	/^    def _gen_displays_list(self):$/;"	m	class:Key_event_handler_v2
+_gen_outp_nr_2_region_outp_nr_mapping_list	mouseev	/^    def _gen_outp_nr_2_region_outp_nr_mapping_list(self):$/;"	m	class:Key_event_handler_v2
+_gen_region_layouts	mouseev	/^    def _gen_region_layouts(self):$/;"	m	class:Key_event_handler_v2
+_homePos2virtPos	mouseev	/^    def _homePos2virtPos(self,x,y):$/;"	m	class:Key_event_handler_v2
+_input_pos_update	mouseev	/^    def _input_pos_update(self,x,y):$/;"	m	class:Key_event_handler_v2
+_input_warp_center	mouseev	/^    def _input_warp_center(self,from_pos):$/;"	m	class:Key_event_handler_v2
+_interhome_warp_to	mouseev	/^    def _interhome_warp_to(self,outp_nr,virt_pos):$/;"	m	class:Key_event_handler_v2
+_is_display_switch	keyev	/^        def _is_display_switch(self,to_output_nr):$/;"	m	class:Key_event_handler_v2
+_is_display_switch	mouseev	/^    def _is_display_switch(self,to_output_nr):$/;"	m	class:Key_event_handler_v2
+_is_home	mouseev	/^    def _is_home(self):$/;"	m	class:Key_event_handler_v2
+_is_point_in_area	mouseev	/^    def _is_point_in_area(self,point,area):$/;"	m	class:Key_event_handler_v2
+_is_point_in_input_area	mouseev	/^    def _is_point_in_input_area(self,pointx,pointy):$/;"	m	class:Key_event_handler_v2
+_outp_is_home	mouseev	/^    def _outp_is_home(self,to_output_nr):$/;"	m	class:Key_event_handler_v2
+_update_pointer	mouseev	/^    def _update_pointer(self):$/;"	m	class:Key_event_handler_v2
+_virtPos2homePos	mouseev	/^    def _virtPos2homePos(self,output_of_vpos,vpos):$/;"	m	class:Key_event_handler_v2
+_virtPos2remotePos	mouseev	/^    def _virtPos2remotePos(self):$/;"	m	class:Key_event_handler_v2
+clear_keys	keyev	/^        def clear_keys(self,output_nr):$/;"	m	class:Key_event_handler_v2
+clear_keys	mouseev	/^    def clear_keys(self,output_nr):$/;"	m	class:Key_event_handler_v2
+debug_event	mouseev	/^debug_event=False$/;"	v
+fake_input	keyev	/^        def fake_input(self, output_nr, event_type,detail=None,print=True,msg=""):$/;"	m	class:Key_event_handler_v2
+fake_input	mouseev	/^    def fake_input(self, output_nr, event_type, detail=0,root=0,x=0,y=0,msg=""):$/;"	m	class:Key_event_handler_v2
+grab_failcodes	keyev	/^        grab_failcodes={str(X.GrabInvalidTime):"GrabInvalidTime",str(X.GrabFrozen):"GrabFrozen",/;"	v	class:Key_event_handler_v2
+grab_failcodes	mouseev	/^    grab_failcodes={str(X.GrabInvalidTime):"GrabInvalidTime",str(X.GrabFrozen):"GrabFrozen",str(/;"	v	class:Key_event_handler_v2
+grab_keyboard	keyev	/^        def grab_keyboard(self):$/;"	m	class:Key_event_handler_v2
+grab_mouse	mouseev	/^    def grab_mouse(self):$/;"	m	class:Key_event_handler_v2
+grab_switch_keys	keyev	/^        def grab_switch_keys(self):$/;"	m	class:Key_event_handler_v2
+grab_switch_keys	mouseev	/^    def grab_switch_keys(self):$/;"	m	class:Key_event_handler_v2
+handle	keyev	/^        def handle(self,keyeventcode,keycode,state,time):$/;"	m	class:Key_event_handler_v2
+handle	mouseev	/^    def handle(self,event_type,time,x=0,y=0,detail=0):$/;"	m	class:Key_event_handler_v2
+handle_home	mouseev	/^    def handle_home(self,event_type,time,x=0,y=0,detail=0):$/;"	m	class:Key_event_handler_v2
+handle_key_event	keyev	/^        def handle_key_event(event):$/;"	f	function:key_events_loop_v2	file:
+handle_key_event	mouseev	/^    def handle_key_event(event):$/;"	f	function:key_events_loop_v2	file:
+handle_remote	mouseev	/^    def handle_remote(self,event_type,time,detail=0):$/;"	m	class:Key_event_handler_v2
+kc_1	keyev	/^        kc_1 = 10$/;"	v
+kc_1	mouseev	/^    kc_1 = 10$/;"	v
+kc_2	keyev	/^        kc_2 = 11$/;"	v
+kc_2	mouseev	/^    kc_2 = 11$/;"	v
+kc_3	keyev	/^        kc_3 = 12$/;"	v
+kc_3	mouseev	/^    kc_3 = 12$/;"	v
+kc_4	keyev	/^        kc_4 = 13$/;"	v
+kc_4	mouseev	/^    kc_4 = 13$/;"	v
+kc_ralt	keyev	/^        kc_ralt  = 108$/;"	v
+kc_ralt	mouseev	/^    kc_ralt  = 108$/;"	v
+kc_rctrl	keyev	/^        kc_rctrl = 105$/;"	v
+kc_rctrl	mouseev	/^    kc_rctrl = 105$/;"	v
+key_events_loop_v2	keyev	/^    def key_events_loop_v2(handler):$/;"	f
+key_events_loop_v2	mouseev	/^def key_events_loop_v2(handler):$/;"	f
+output_0_keybindings	keyev	/^        output_0_keybindings=[$/;"	v
+output_0_keybindings	mouseev	/^    output_0_keybindings=[$/;"	v
+output_1_keybindings	keyev	/^        output_1_keybindings=[$/;"	v
+output_1_keybindings	mouseev	/^    output_1_keybindings=[$/;"	v
+output_2_keybindings	keyev	/^        output_2_keybindings=[$/;"	v
+output_2_keybindings	mouseev	/^    output_2_keybindings=[$/;"	v
+output_3_keybindings	keyev	/^        output_3_keybindings=[$/;"	v
+output_3_keybindings	mouseev	/^    output_3_keybindings=[$/;"	v
+output_select_keybindings	keyev	/^        output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindi/;"	v
+output_select_keybindings	mouseev	/^    output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,/;"	v
+print	keyev	/^        def print(self,keyeventcode,keycode,target_display,msg):$/;"	m	class:Key_event_handler_v2
+print_grab_error	keyev	/^        def print_grab_error(self,retcode):$/;"	m	class:Key_event_handler_v2
+print_grab_error	mouseev	/^    def print_grab_error(self,retcode):$/;"	m	class:Key_event_handler_v2
+server_switch_state	keyev	/^        server_switch_state=0xC$/;"	v	class:Key_event_handler_v2
+server_switch_state	mouseev	/^    server_switch_state=0xC$/;"	v	class:Key_event_handler_v2
+sw_keycodes	keyev	/^        sw_keycodes=[24,25,26,27]$/;"	v	class:Key_event_handler_v2
+sw_keycodes	mouseev	/^    sw_keycodes=[24,25,26,27]$/;"	v	class:Key_event_handler_v2
+switch2output	keyev	/^        def switch2output(self,output_nr):$/;"	m	class:Key_event_handler_v2
+switch2output	mouseev	/^    def switch2output(self,output_nr,to_left=False):$/;"	m	class:Key_event_handler_v2
