@@ -22,10 +22,14 @@ should be easy.
 
 # STATE #
 =========
-
-The state is testing/very unstable.
+The state is testing/very unstable but usable.
 The keyboard file is somewhat clean.
 The mouse file needs heavy cleanup.
+
+## missing parts ##
+Mouse invisibility code on the "home-Xserver".
+At the moment the mouse is visible moving on the "home-Xserver"
+while using the mouse on a remote one.
 
 # Requirements #
 ================
