@@ -397,7 +397,7 @@ class Key_event_handler_v2():
         self.current_region_layout=self.region_relative_layouts[servername]
         self.current_display=self.displays[output_nr]
         self.current_output_root=self.current_display.screen().root
-        print("SWITCHED TO OUTPUT",output_nr)
+        #print("SWITCHED TO OUTPUT",output_nr)
 
     def _update_pointer(self):
         x=self.input_pos[0]
@@ -524,13 +524,13 @@ def key_events_loop_v2(handler):
             try:
                 x=int(event._data['data']['root_x'])
                 event_type = event._data['evtype']
+                if not event_type in (xi.ButtonPress,xi.ButtonRelease,xi.Motion):
+                    #dd(event)
+                    return
             except KeyError as e:
-                pass
-            if not event_type in (xi.ButtonPress,xi.ButtonRelease,xi.Motion):
-                dd(event)
                 return
         else:
-            dd(event)
+            #dd(event)
             return
         #if event_type in (4,5):
         #    print("button/press/release:",event_type)
