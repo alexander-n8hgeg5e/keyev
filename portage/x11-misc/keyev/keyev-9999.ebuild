@@ -5,7 +5,8 @@ EAPI=7
 
 PYTHON_COMPAT=( python3_6 )
 EGIT_REPO_URI="${CODEDIR}/${PN} ${MYGITHUB_URIBASE}${PN}.git"
-inherit git-r3 distutils-r1
+inherit git-r3
+#inherit git-r3 distutils-r1
 
 DESCRIPTION="a key event proxy to use one keyboard/mouse for multiple x-servers"
 HOMEPAGE="${MYGITHUB_URIBASE}${PN}.git"
@@ -19,3 +20,9 @@ DEPEND=""
 RDEPEND="${DEPEND}
 	dev-python/python-xlib
 "
+
+src_install(){
+	dobin keyev
+	dobin mouseev
+}
+
