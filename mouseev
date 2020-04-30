@@ -438,7 +438,7 @@ class Key_event_handler_v2():
         y=remote_output_pos[1]+at_output_pos_y
         return (x,y)
 
-    def handle_home(self,event_type,time,x=0,y=0,detail=0,metatype=None):
+    def handle_home(self,event_type,time,x=0,y=0,detail=0):
         """
         """
         pos=self.switch_positions[self.current_output_nr]
@@ -453,7 +453,7 @@ class Key_event_handler_v2():
                 self.switch2output(sw2)
 
 
-    def handle_remote(self,event_type,time,detail=0,metatype=None):
+    def handle_remote(self,event_type,time,detail=0):
         x=self.input_pos[0]
         y=self.input_pos[1]
 
@@ -482,15 +482,15 @@ class Key_event_handler_v2():
         self.last_input_pos=self.input_pos
         self.input_pos=[x,y]
 
-    def handle(self,event_type,time,x=0,y=0,detail=0,metatype=None):
+    def handle(self,event_type,time,x=0,y=0,detail=0):
         global debug_event
         
         self._input_pos_update(x,y)
         self._update_pointer()
         if self._is_home():
-            self.handle_home(event_type,time,x=x,y=y,detail=detail,metatype=metatype)
+            self.handle_home(event_type,time,x=x,y=y,detail=detail)
         else:
-            self.handle_remote(event_type,time,detail=detail,metatype=metatype)
+            self.handle_remote(event_type,time,detail=detail)
 
         #dd(self.virt_pos)
         
@@ -532,13 +532,13 @@ def key_events_loop_v2(handler):
         else:
             dd(event)
             return
-        if event_type in (4,5):
-            print("button/press/release:",event_type)
-        metatype = event.type
+        #if event_type in (4,5):
+        #    print("button/press/release:",event_type)
+        #metatype = event.type
         detail = event._data['data']['detail']
         time = event._data['data']['time']
         y=int(event._data['data']['root_y'])
-        handler.handle( event_type,time,x=x,y=y,detail=detail,metatype=metatype)
+        handler.handle( event_type,time,x=x,y=y,detail=detail)
 
     # loop
     display=handler.displays[0]
