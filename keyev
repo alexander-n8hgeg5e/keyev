@@ -30,7 +30,7 @@
 # Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 # Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
 
-from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp
+from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug
 
 try:
     from Xlib.display import Display
@@ -114,7 +114,8 @@ try:
                      ,current_output_nr=None,
                      switch_modifier_keycodes=[105,108],
                      switch_modifer_state=0xC,
-                     output_select_keybindings=None
+                     output_select_keybindings=None,
+                     debug=False,
                     ):
             # Key event handler needs displays to send
             # keyevents to.
@@ -160,6 +161,8 @@ try:
             self.output_select_keybindings=output_select_keybindings
     
             self.grab_switch_keys()
+
+            self.debug = debug
     
         def grab_switch_keys(self):
             self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
@@ -214,22 +217,26 @@ try:
                     self.fake_input(output_nr,keybind['event_type'],detail=keybind['keycode'],msg="output switch")
     
             self.current_output_nr=output_nr
-    
+
+        def is_sw_state(self,state):
+            return state&self.switch_modifer_state==self.switch_modifer_state
+
         def handle(self,keyeventcode,keycode,state,time):
-            swst=self.switch_modifer_state
-            if (state&swst==swst) and keycode in self.sw_keycodes:
+            if self.is_sw_state(state) and keycode in self.sw_keycodes:
                 self.switch2output(self.sw_keycodes.index(keycode))
             else:
                 self.fake_input(self.current_output_nr,keyeventcode,detail=keycode,msg="handle")
                 self.displays[self.current_output_nr].flush()
     
         def print(self,keyeventcode,keycode,target_display,msg):
+            if not self.debug:
+                return
             formatstring="{:<5n} {:>15s} {:3n} {:s}"
             if keyeventcode == X.KeyPress:
                 m0="KeyPress"
             else:
                 m0="KeyRelease"
-            #print(formatstring.format(target_display,m0,keycode,msg))
+            debug(formatstring.format(target_display,m0,keycode,msg))
     
         def print_grab_error(self,retcode):
             if retcode in [ int(i) for i in self.grab_failcodes.keys() ]:                          
@@ -312,7 +319,8 @@ try:
                                                     "esadc:0",
                                                     "skyscraper:0",
                                                     current_output_nr=2,
-                                                    output_select_keybindings=output_select_keybindings
+                                                    output_select_keybindings=output_select_keybindings,
+                                                    debug=False,
                                                 ))
     
 except Exception as e:
