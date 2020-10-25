@@ -39,6 +39,7 @@ try:
     from sys import argv
     from time import time
     from Xlib.ext.xtest import fake_input
+    from socket import gethostname
     
     
     ##################
@@ -316,7 +317,7 @@ try:
         
         key_events_loop_v2( Key_event_handler_v2(
                                                     [0,1,0,1],
-                                                    "esadc:0",
+                                                    gethostname()+":"+environ['DISPLAY'].split(":")[1],
                                                     "skyscraper:0",
                                                     current_output_nr=2,
                                                     output_select_keybindings=output_select_keybindings,

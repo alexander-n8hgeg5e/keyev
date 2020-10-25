@@ -53,6 +53,7 @@ from pylib.du import d0,d1,dd,ptb
 from pprint import pprint
 from Xlib.ext import xinput as xi
 import struct
+from socket import gethostname
 
 debug_event=False
 
@@ -601,10 +602,10 @@ if __name__=="__main__":
     
     key_events_loop_v2( Key_event_handler_v2(
                                                 [0,1,0,1],
-                                                "esadc:0",
+                                                gethostname()+":"+environ['DISPLAY'].split(":")[1],
                                                 "skyscraper:0",
                                                 current_output_nr=0,
                                                 output_select_keybindings=output_select_keybindings
                                             ))
 
-# vim: set foldmethod=indent foldlevel=1 foldnestmax=2 :
+# vim: set foldmethod=indent foldlevel=0 foldnestmax=2 :
