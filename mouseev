@@ -576,15 +576,6 @@ if __name__=="__main__":
             { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
             { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
                          ]  
-    output_2_keybindings=[
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
-            { 'keycode':kc_3,     'event_type' : X.KeyPress   },
-            { 'keycode':kc_3,     'event_type' : X.KeyRelease   },
-            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
-            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
-                         ] 
-
     output_1_keybindings=[
             { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
             { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
@@ -593,6 +584,14 @@ if __name__=="__main__":
             { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
             { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
                          ]  
+    output_2_keybindings=[
+            { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
+            { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
+            { 'keycode':kc_3,     'event_type' : X.KeyPress   },
+            { 'keycode':kc_3,     'event_type' : X.KeyRelease   },
+            { 'keycode':kc_ralt,  'event_type' : X.KeyRelease   },
+            { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
+                         ] 
     output_3_keybindings=[
             { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
             { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
