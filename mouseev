@@ -163,6 +163,8 @@ class Key_event_handler_v2():
         self.current_region_layout=self.region_relative_layouts[servername]
         self.current_display=self.displays[self.current_output_nr]
         self.current_output_root=self.current_display.screen().root
+        self.home_xdisplay_index = self.display_strings.index(self.home_outputs[0]["x_server"])
+        #print("home idx {}".format(self.home_xdisplay_index))
 
     def _gen_displays_list(self):
         displays=[]

@@ -32,6 +32,7 @@
 
 from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug
 from pylib.screen_utils.screen_utils import layout2displaynr
+from pylib.screen_utils.env import parse_display_var
 
 try:
     from Xlib.display import Display
@@ -165,6 +166,9 @@ try:
             self.grab_switch_keys()
 
             self.debug = debug
+
+            self.home_xdisplay_index = display_strings.index(parse_display_var())
+            #print("home idx {}".format(self.home_xdisplay_index))
     
         def grab_switch_keys(self):
             self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
@@ -183,10 +187,10 @@ try:
             return o2d[cur] != o2d[to_output_nr]
     
         def _dsw_is_home_switch(self,to_output_nr):
-            return self.outputnr2displaynr_list[to_output_nr] == 0
+            return self.outputnr2displaynr_list[to_output_nr] == self.home_xdisplay_index
     
         def _dsw_is_leave_home_switch(self):
-            return self.outputnr2displaynr_list[self.current_output_nr] == 0
+            return self.outputnr2displaynr_list[self.current_output_nr] == self.home_xdisplay_index
         
         def clear_keys(self,output_nr):
             for i in range(1,250):
