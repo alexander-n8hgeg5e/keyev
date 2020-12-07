@@ -47,6 +47,7 @@ from pylib.screen_utils.screen_utils import get_connected_outputs
 from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v2
 from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v3
 from pylib.screen_utils.screen_utils import layout2xpos_v2
+from pylib.screen_utils.screen_utils import layout2displaynr
 from math import floor
 from pprint import pprint
 from pylib.du import d0,d1,dd,ptb
@@ -601,7 +602,7 @@ if __name__=="__main__":
     output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
     
     key_events_loop_v2( Key_event_handler_v2(
-                                                [0,1,0,1],
+                                                layout2displaynr(),
                                                 gethostname()+":"+environ['DISPLAY'].split(":")[1],
                                                 "skyscraper:0",
                                                 current_output_nr=0,

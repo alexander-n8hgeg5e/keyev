@@ -31,6 +31,7 @@
 # Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
 
 from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug
+from pylib.screen_utils.screen_utils import layout2displaynr
 
 try:
     from Xlib.display import Display
@@ -316,10 +317,10 @@ try:
         output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
         
         key_events_loop_v2( Key_event_handler_v2(
-                                                    [0,1,0,1],
+                                                    layout2displaynr(),
                                                     gethostname()+":"+environ['DISPLAY'].split(":")[1],
                                                     "skyscraper:0",
-                                                    current_output_nr=2,
+                                                    current_output_nr=0,
                                                     output_select_keybindings=output_select_keybindings,
                                                     debug=False,
                                                 ))
