@@ -124,12 +124,12 @@ try:
             # keyevents to.
             # home_display is the x-display/x-server with the
             # keyboard attached.
-            display_strings=home_display_string,*display_strings
+            self.display_strings=home_display_string,*display_strings
             self.displays=[]
             allready_created=[]
             for displaynr in outputnr2displaynr_list:
                 if not displaynr in allready_created:
-                    self.displays.append(Display(display_strings[displaynr]))
+                    self.displays.append(Display(self.display_strings[displaynr]))
                     allready_created.append(displaynr)
                 else:
                     # use a display allready created
@@ -162,18 +162,20 @@ try:
             self.root=self.displays[0].screen().root
     
             self.output_select_keybindings=output_select_keybindings
+
+            self.home_xdisplay_index = self.display_strings.index(parse_display_var())
+            #print("home idx {}".format(self.home_xdisplay_index))
     
             self.grab_switch_keys()
 
             self.debug = debug
-
-            self.home_xdisplay_index = display_strings.index(parse_display_var())
-            #print("home idx {}".format(self.home_xdisplay_index))
     
         def grab_switch_keys(self):
-            self.root.grab_key(self.sw_keycodes[1],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-            self.root.grab_key(self.sw_keycodes[3],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-    
+            for i in range(len(self.outputnr2displaynr_list)):
+                if self.outputnr2displaynr_list[i] != self.home_xdisplay_index:
+                    self.root.grab_key(self.sw_keycodes[i],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
+                    #print("grab="+str(i)) 
+
         def grab_keyboard(self):
             retcode=self.root.grab_keyboard(False,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
             if not retcode==0:
