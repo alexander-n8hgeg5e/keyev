@@ -238,7 +238,9 @@ class Key_event_handler_v2():
 
     def _calc_input_area(self):
         """
-        returns the corner points of the largest connected output
+        returns the corner points of the largest (in area) connected output.
+        The largest one will probably provide the the best resolution.
+        This is not true if your monitor is a line of pixels arround the world.
         """
         co=get_connected_outputs(x_display=self.display_strings[0])
 
