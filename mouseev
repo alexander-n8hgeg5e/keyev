@@ -233,7 +233,10 @@ class Key_event_handler_v2():
     def _calc_virtual_pointer_area(self):
         l=self.screen_layout
         x_max=int(l[-1]['pos'][0])+int(l[-1]['dim'][0])-1
-        y_max=int(l[-1]['pos'][1])+int(l[-1]['dim'][1])-1
+        y_max=0
+        for i in range(len(l)):
+            y=int(l[i]['pos'][1])+int(l[i]['dim'][1])-1
+            y_max = y if y > y_max else y_max
         return x_max,y_max
 
     def _calc_input_area(self):
