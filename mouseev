@@ -30,7 +30,7 @@
 # Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 # Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
 
-HYSTERESIS=50
+ANTI_BACKSWITCH_JUMP_DISTANCE=4 # unit is pixels
 
 from Xlib.display import Display
 from Xlib import X, XK, protocol, error
@@ -375,23 +375,20 @@ class Key_event_handler_v2():
             # nothing to do
             return
 
-        ## send keyevents to switch to output
-        #if not self.output_select_keybindings is None:
-        #    for keybind in self.output_select_keybindings[output_nr]:
-        #        self.fake_input(output_nr,keybind['event_type'],detail=keybind['keycode'],msg="output switch")
+        # jump to prevent instant backswitching
+        #print("jump from x={}".format(self.virt_pos[0]))
+        if to_left:
+            #print("sw left")
+            self.virt_pos[0] -= ANTI_BACKSWITCH_JUMP_DISTANCE
+        else:
+            self.virt_pos[0] += ANTI_BACKSWITCH_JUMP_DISTANCE
+            #print("sw right")
+        #print("jump        to x={}".format(self.virt_pos[0]))
 
-        # prevent immediate backswitching
-        self.switch_disable = self.current_output_nr
-        self.switch_disable_pos = self.virt_pos
-        
         if self._outp_is_home(output_nr):
             # warp pointer to match virt_pos
             # show pointer
-            if not to_left:
-                pos=self.screen_layout[output_nr]['pos'][0],self.virt_pos[1]
-            else:
-                pos=int(self.screen_layout[output_nr+1]['pos'][0])-1,self.virt_pos[1]
-            self._interhome_warp_to(output_nr,pos)
+            self._interhome_warp_to(output_nr,self.virt_pos)
 
             if not self._outp_is_home(self.current_output_nr):
                 # sw from remote to home
@@ -452,16 +449,16 @@ class Key_event_handler_v2():
         """
         pos=self.switch_positions[self.current_output_nr]
         x,y=self.virt_pos
-        if pos[1][0] + HYSTERESIS > (x-1) >= pos[1][0]:
+        if pos[1][0] <= x:
             # switch right
             sw2=pos[1][1]
-            if not sw2==-1:
-                self.switch2output(sw2)
-        elif pos[0][0] - HYSTERESIS < (x+1) <= pos[0][0]:
+            if not sw2 == -1:
+                    self.switch2output(sw2)
+        elif x <= pos[0][0]:
             # switch left
             sw2=pos[0][1]
             if not sw2 == -1:
-                self.switch2output(sw2)
+                    self.switch2output(sw2,to_left=True)
 
     def handle_remote(self,event_type,time,detail=0):
         x=self.input_pos[0]
@@ -472,16 +469,16 @@ class Key_event_handler_v2():
 
         pos=self.switch_positions[self.current_output_nr]
         x,y=self.virt_pos
-        if  pos[0][0] - HYSTERESIS < x < pos[0][0]:
+        if  x <= pos[0][0]:
             # switch left
             sw2=pos[0][1]
             if not sw2 == -1:
-                self.switch2output(sw2,to_left=True)
-        elif pos[1][0] + HYSTERESIS > x > pos[1][0]:
+                    self.switch2output(sw2,to_left=True)
+        elif pos[1][0] <= x:
             # switch right
             sw2=pos[1][1]
             if not sw2 == -1:
-                self.switch2output(pos[1][1])
+                    self.switch2output(sw2)
 
         # keyevent sending
         x,y=self.get_remote_pos()
@@ -497,6 +494,8 @@ class Key_event_handler_v2():
         
         self._input_pos_update(x,y)
         self._update_pointer()
+
+        #print(self.virt_pos)
         if self._is_home():
             self.handle_home(event_type,time,x=x,y=y,detail=detail)
         else:
