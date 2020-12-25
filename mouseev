@@ -453,14 +453,15 @@ class Key_event_handler_v2():
         pos=self.switch_positions[self.current_output_nr]
         x,y=self.virt_pos
         if pos[1][0] + HYSTERESIS > (x-1) >= pos[1][0]:
+            # switch right
             sw2=pos[1][1]
             if not sw2==-1:
                 self.switch2output(sw2)
         elif pos[0][0] - HYSTERESIS < (x+1) <= pos[0][0]:
+            # switch left
             sw2=pos[0][1]
             if not sw2 == -1:
                 self.switch2output(sw2)
-
 
     def handle_remote(self,event_type,time,detail=0):
         x=self.input_pos[0]
