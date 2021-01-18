@@ -351,4 +351,4 @@ try:
 except Exception as e:
     warn_exp(e,with_traceback=True)
 
-# vim: set foldmethod=indent foldlevel=1 foldnestmax=2 :
+# vim: set foldmethod=indent foldlevel=1 foldnestmax=3 :
