@@ -227,6 +227,12 @@ try:
             self.current_output_nr=output_nr
 
         def is_sw_state(self,state):
+            """
+            Tells whether the modifer state is the state that is for switching.
+            Modifiers are keys like strg,alt,...
+            Switching means to change to another output/monitor
+            (a device connected with a separate cable).
+            """
             return state&self.switch_modifer_state==self.switch_modifer_state
 
         def handle(self,keyeventcode,keycode,state,time):
@@ -280,13 +286,25 @@ try:
         kc_2 = 11
         kc_3 = 12
         kc_4 = 13
+
+       #  The following 4(commented)/2 ones are
+       #  the codes that are send by the user to
+       #  the "home-xserver" what causes further
+       #  actions to happen.
+
        # kc_q = 24
        # kc_w = 25
        # kc_e = 26
        # kc_r = 27
+
         kc_rctrl = 105
         kc_ralt  = 108
     
+
+        # The following keycodes will be send to the Xserver that
+        # they belong to. The windowmanager running there
+        # will handle them.
+
         output_0_keybindings=[
                 { 'keycode':kc_rctrl, 'event_type' : X.KeyPress   },
                 { 'keycode':kc_ralt,  'event_type' : X.KeyPress   },
