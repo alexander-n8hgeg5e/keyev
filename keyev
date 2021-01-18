@@ -323,7 +323,7 @@ try:
         
         key_events_loop_v2( Key_event_handler_v2(
                                                     layout2displaynr(),
-                                                    gethostname()+":"+environ['DISPLAY'].split(":")[1],
+                                                    parse_display_var(),
                                                     "skyscraper:0",
                                                     current_output_nr=0,
                                                     output_select_keybindings=output_select_keybindings,
