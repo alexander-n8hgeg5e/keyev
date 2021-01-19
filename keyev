@@ -204,11 +204,11 @@ try:
             fake_input(self.displays[output_nr],event_type,detail=detail)
             self.print(event_type,detail,self.outputnr2displaynr_list[output_nr],msg)
     
-    
         def switch2output(self,output_nr):
-            if self.current_output_nr==output_nr:
-                # nothing to do
-                return
+            #if self.current_output_nr==output_nr:
+            # do not return because it self.current_output_nr
+            # may not be the output that is activated by
+            # the windowmanager or some similar program
     
             if self._is_display_switch(output_nr):
                 if self._dsw_is_home_switch(output_nr):
