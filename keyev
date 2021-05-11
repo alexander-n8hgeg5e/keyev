@@ -29,10 +29,16 @@
 # 
 # Sie sollten eine Kopie der GNU General Public License zusammen mit diesem
 # Programm erhalten haben. Wenn nicht, siehe <https://www.gnu.org/licenses/>.
-
+import sys
+sys.path.insert(0,"/var/src/pylib")
 from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug
 from pylib.screen_utils.screen_utils import layout2displaynr
+from pylib.screen_utils.env import parse_screen_layout_env_var_v3
 from pylib.screen_utils.env import parse_display_var
+from pylib.screen_utils.env import parse_display_var_v3
+from pylib.screen_utils     import get_current_output_index
+from re import sub
+from argparse import ArgumentParser
 
 try:
     from Xlib.display import Display
@@ -112,24 +118,46 @@ try:
         
         def __init__(self,
                      outputnr2displaynr_list,
-                     home_display_string,
-                     *display_strings
-                     ,current_output_nr=None,
-                     switch_modifier_keycodes=[105,108],
-                     switch_modifer_state=0xC,
-                     output_select_keybindings=None,
-                     debug=False,
+                     *display_strings,
+                     current_output_nr,
+                     home_xdisplay_index, 
+                     switch_modifier_keycodes = [105,108],
+                     switch_modifer_state = 0xC,
+                     output_select_keybindings = None,
+                     debug = False,
                     ):
-            # Key event handler needs displays to send
-            # keyevents to.
-            # home_display is the x-display/x-server with the
-            # keyboard attached.
-            self.display_strings=home_display_string,*display_strings
-            self.displays=[]
-            allready_created=[]
+            ####################################
+            ###   debug: checking all args   ###
+            ####################################
+            if debug:
+                from pylib.du import dd
+                dd(outputnr2displaynr_list)
+                dd(display_strings)
+                dd(current_output_nr)
+                dd(home_xdisplay_index)
+                #dd(switch_modifier_keycodes)
+                dd(switch_modifier_keycodes)
+                dd(switch_modifer_state)
+                dd(debug)
+
+            ########################
+            ##   setup displays   ##
+            ########################
+            # Key event handler needs displays to send keyevents to.
+            # home_display is the x-display/x-server with the keyboard attached.
+            self.display_strings = display_strings
+            self.displays = []
+            allready_created= []
             for displaynr in outputnr2displaynr_list:
                 if not displaynr in allready_created:
-                    self.displays.append(Display(self.display_strings[displaynr]))
+                    display_string = self.display_strings[displaynr]
+                    try:
+                        to_append = Display(display_string)
+                    except TypeError:
+                        print("\""+display_string+"\"")
+                        print(Display)
+                        raise
+                    self.displays.append(to_append)
                     allready_created.append(displaynr)
                 else:
                     # use a display allready created
@@ -138,50 +166,63 @@ try:
                             # got output_nr "i" that has the display
                             self.displays.append(self.displays[i])
                             break
-    
-    
-            #self.screen=self.target_display.screen()
-            #self.root=self.screen.root
-    
-            # every display can have multiple outputs
-            # the current_output_nr variable holds the state
-            self.current_output_nr=current_output_nr
-    
-            # this is the window on the home display
-            #self.grab_window = self.displays[0].get_input_focus()._data['focus']
-    
+            if debug:
+                dd(self.display_strings)
+
+            #######################
+            ## setup sw keycodes ##
+            #######################
+            remove_left = True
+            while len(outputnr2displaynr_list) < len(self.sw_keycodes) :
+                if remove_left:
+                    self.sw_keycodes = self.sw_keycodes[1:]
+                    remove_left = False
+                else:
+                    self.sw_keycodes = self.sw_keycodes[:-1]
+                    remove_left = True
+            if debug:
+                print(f"sw_keycodes = {self.sw_keycodes}")
+
+            #################################
+            ###   setup the other stuff   ###
+            #################################
             # this list defines what display is on what output
             # list indices are the output numbers
             # stored in the list are the display number, as
             # it was in the init argument list
             self.outputnr2displaynr_list=outputnr2displaynr_list
-    
+            self.current_output_nr = current_output_nr
             self.switch_modifer_state=switch_modifer_state
             self.switch_modifier_keycodes=switch_modifier_keycodes
-    
-            self.root=self.displays[0].screen().root
-    
+            self.home_xdisplay_index = home_xdisplay_index
             self.output_select_keybindings=output_select_keybindings
-
-            self.home_xdisplay_index = self.display_strings.index(parse_display_var())
-            #print("home idx {}".format(self.home_xdisplay_index))
-    
+            self.debug = debug
+            # set root
+            self.root=self.displays[self.home_xdisplay_index].screen().root
             self.grab_switch_keys()
 
-            self.debug = debug
     
         def grab_switch_keys(self):
             for i in range(len(self.outputnr2displaynr_list)):
-                if self.outputnr2displaynr_list[i] != self.home_xdisplay_index:
+                #if self.outputnr2displaynr_list[i] != self.home_xdisplay_index:
+                if True:
+                    #if self.debug:
+                        #print(f"grabbing sw key: index={i}, keycode={self.sw_keycodes[i]}")
+                        #print(dir(self.root.display))
                     self.root.grab_key(self.sw_keycodes[i],self.switch_modifer_state,True,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
-                    #print("grab="+str(i)) 
+                else:
+                    pass
+                    #if self.debug:
+                    #    print(f"not grabbing sw key: index={i}, keycode={self.sw_keycodes[i]}")
+
 
         def grab_keyboard(self):
             retcode=self.root.grab_keyboard(False,X.GrabModeAsync,X.GrabModeAsync,X.CurrentTime)
             if not retcode==0:
                 self.print_grab_error(retcode)
             self.displays[0].sync()
-            #print("grabbed keyboard")
+            #if self.debug:
+                #print("grabbed keyboard")
         
         def _is_display_switch(self,to_output_nr):
             o2d=self.outputnr2displaynr_list
@@ -205,15 +246,16 @@ try:
             self.print(event_type,detail,self.outputnr2displaynr_list[output_nr],msg)
     
         def switch2output(self,output_nr):
-            #if self.current_output_nr==output_nr:
+            # if self.current_output_nr == output_nr :
             # do not return because it self.current_output_nr
             # may not be the output that is activated by
             # the windowmanager or some similar program
     
             if self._is_display_switch(output_nr):
+                #print("is dsp sw")
                 if self._dsw_is_home_switch(output_nr):
-                    self.displays[0].ungrab_keyboard(time=X.CurrentTime)
-                    self.displays[0].sync()
+                    self.displays[self.home_xdisplay_index].ungrab_keyboard(time=X.CurrentTime)
+                    self.displays[self.home_xdisplay_index].sync()
                     #print("ungrabbed keyboard")
                     self.grab_switch_keys()
                 elif self._dsw_is_leave_home_switch():
@@ -237,7 +279,10 @@ try:
 
         def handle(self,keyeventcode,keycode,state,time):
             if self.is_sw_state(state) and keycode in self.sw_keycodes:
-                self.switch2output(self.sw_keycodes.index(keycode))
+                if keyeventcode==X.KeyRelease:
+                    self.switch2output(self.sw_keycodes.index(keycode))
+                else:
+                    pass
             else:
                 self.fake_input(self.current_output_nr,keyeventcode,detail=keycode,msg="handle")
                 self.displays[self.current_output_nr].flush()
@@ -271,7 +316,7 @@ try:
             handler.handle( keyeventcode, keycode, keystatecode , time)
     
         # loop
-        display=handler.displays[0]
+        display = handler.displays[handler.home_xdisplay_index]
         while True:
             event = display.next_event()
             if event is None or not hasattr(event, 'detail'):
@@ -280,7 +325,22 @@ try:
                 handle_key_event(event)
     
     if __name__=="__main__":
+
+        screen_layout = parse_screen_layout_env_var_v3()
+        display_strings = [i['x_server'] for i in screen_layout]
+        home_xdisplay_index = display_strings.index(parse_display_var_v3())
+        layout2displaynrlist=layout2displaynr(layout=screen_layout)
+
         #display.keysym_to_keycode(XK.string_to_keysym("1"))
+        ap=ArgumentParser()
+        ap.add_argument ("-i","--current-output-index",type=int,
+                        default = get_current_output_index  (
+                                                            layout = screen_layout,
+                                                            layout2displaynrlist = layout2displaynrlist
+                                                            )
+                        )
+        ap.add_argument( "-d", "--debug", action="store_true" )
+        args=ap.parse_args()
     
         kc_1 = 10
         kc_2 = 11
@@ -338,17 +398,20 @@ try:
                 { 'keycode':kc_rctrl, 'event_type' : X.KeyRelease   },
                              ]  
         output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
+
         
         key_events_loop_v2( Key_event_handler_v2(
-                                                    layout2displaynr(),
-                                                    parse_display_var(),
-                                                    "skyscraper:0",
-                                                    current_output_nr=0,
-                                                    output_select_keybindings=output_select_keybindings,
-                                                    debug=False,
+                                                    layout2displaynrlist,
+                                                    *display_strings,
+                                                    current_output_nr = args.current_output_index,
+                                                    home_xdisplay_index = home_xdisplay_index,
+                                                    output_select_keybindings = output_select_keybindings,
+                                                    debug = args.debug,
                                                 ))
     
 except Exception as e:
     warn_exp(e,with_traceback=True)
+    if args.debug:
+        raise
 
 # vim: set foldmethod=indent foldlevel=1 foldnestmax=3 :
