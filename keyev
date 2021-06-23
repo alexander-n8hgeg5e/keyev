@@ -34,7 +34,6 @@ sys.path.insert(0,"/var/src/pylib")
 from pylib.syslog_utils import warn,err,info,log,WARN,ERR,INFO,warn_exp,debug
 from pylib.screen_utils.screen_utils import layout2displaynr
 from pylib.screen_utils.env import parse_screen_layout_env_var_v3
-from pylib.screen_utils.env import parse_display_var
 from pylib.screen_utils.env import parse_display_var_v3
 from pylib.screen_utils     import get_current_output_index
 from re import sub
