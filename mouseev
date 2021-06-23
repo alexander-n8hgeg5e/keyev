@@ -48,7 +48,8 @@ from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v2
 from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v3
 from pylib.screen_utils.screen_utils import layout2xpos_v2
 from pylib.screen_utils.screen_utils import layout2displaynr
-from pylib.screen_utils.env import parse_display_var
+from pylib.screen_utils import get_current_output_index
+from pylib.screen_utils.env import parse_display_var_v3
 from math import floor
 from pprint import pprint
 from pylib.du import d0,d1,dd,ptb
@@ -56,6 +57,7 @@ from pprint import pprint
 from Xlib.ext import xinput as xi
 import struct
 from socket import gethostname
+from argparse import ArgumentParser
 
 debug_event=False
 
@@ -129,44 +131,53 @@ class Key_event_handler_v2():
     
     def __init__(self,
                  outputnr2displaynr_list,
-                 home_display_string,
-                 current_output_nr=None,
-                 switch_modifier_keycodes=[105,108],
-                 switch_modifer_state=0xC,
-                 output_select_keybindings=None,
-                 pointerid=9
+                 *xdisplay_strings,
+                 current_output_nr,
+                 home_xdisplay_index, 
+                 switch_modifier_keycodes = [105,108],
+                 switch_modifer_state = 0xC,
+                 output_select_keybindings = None,
+                 pointerid=9,
+                 debug = False,
                 ):
-        print(f"outputnr2displaynr_list={outputnr2displaynr_list}")
-        self.pointerid=pointerid
-        self.display_strings = [i['x_server'] for i in parse_screen_layout_env_var_v3()]
-        self.home_display_index = self.display_strings.index(home_display_string)
-        print(f"display_strings={self.display_strings}")
+        ####################################
+        ###   debug: checking all args   ###
+        ####################################
+        if debug:
+            from pylib.du import dd
+            dd(outputnr2displaynr_list)
+            dd(xdisplay_strings)
+            dd(current_output_nr)
+            dd(home_xdisplay_index)
+            #dd(switch_modifier_keycodes)
+            dd(switch_modifier_keycodes)
+            dd(switch_modifer_state)
+            dd(pointerid)
+            dd(debug)
+            
 
+        self.pointerid=pointerid
+        self.xdisplay_strings = xdisplay_strings
+        self.home_xdisplay_index = home_xdisplay_index
         self.current_output_nr=current_output_nr
         self.outputnr2displaynr_list=outputnr2displaynr_list
         self.displays=self._gen_displays_list()
-        self.root=self.displays[self.home_display_index].screen().root
-        print("d0")
-        #self.grab_mouse()
-        self.xi_opcode=self.displays[self.home_display_index].display.get_extension_major('XInputExtension')
-        print("d1")
+        self.root=self.displays[self.home_xdisplay_index].screen().root
+        self.xi_opcode=self.displays[self.home_xdisplay_index].display.get_extension_major('XInputExtension')
         self._register_pointer_events()
-        print("d2")
         self.screen_layout=parse_screen_layout_env_var_v3()
-        print("screen_layout: ", self.screen_layout)
         self.input_area = self._calc_input_area()
         self.warp_pos = self._calc_warp_pos()
         self.switch_positions = self._calc_switching_table()
-        print("sw pos: ",self.switch_positions)
         self.switch_disable=-1
         self.switch_disable_pos=[0,0]
         self.virtual_area = self._calc_virtual_pointer_area()
         self.outp_nr_2_region_outp_nr=self._gen_outp_nr_2_region_outp_nr_mapping_list()
         self.outp_nr_2_home_outp_nr=self.outp_nr_2_region_outp_nr
         self.region_relative_layouts=self._gen_region_layouts()
-        self.home_outputs=self.region_relative_layouts[self.display_strings[self.home_display_index]]
+        self.home_outputs=self.region_relative_layouts[self.xdisplay_strings[self.home_xdisplay_index]]
         # initialize to 0 and set to the correct value during first handle call
-        request_result = request.QueryPointer(self.displays[self.home_display_index].display,window=self.root.id)
+        request_result = request.QueryPointer(self.displays[self.home_xdisplay_index].display,window=self.root.id)
         self.input_pos = [ request_result.root_x,request_result.root_y ]
         self.virt_pos  = self._homePos2virtPos(*self.input_pos)
         self.last_input_pos = self.input_pos
@@ -175,14 +186,13 @@ class Key_event_handler_v2():
         self.current_region_layout=self.region_relative_layouts[servername]
         self.current_display=self.displays[self.current_output_nr]
         self.current_output_root=self.current_display.screen().root
-        print("init done")
 
     def _gen_displays_list(self):
         displays=[]
         allready_created=[]
         for displaynr in self.outputnr2displaynr_list:
             if not displaynr in allready_created:
-                displays.append(Display(self.display_strings[displaynr]))
+                displays.append(Display(self.xdisplay_strings[displaynr]))
                 allready_created.append(displaynr)
             else:
                 # use a display allready created
@@ -195,7 +205,7 @@ class Key_event_handler_v2():
 
     def _gen_region_layouts(self):
         region_relative_layouts={}
-        for servername in self.display_strings:
+        for servername in self.xdisplay_strings:
             if not servername in region_relative_layouts:
                 # process region and add
                 region_layout = env_screen_layout_2_region_layout_v3(self.screen_layout,x_display=servername)
@@ -256,7 +266,7 @@ class Key_event_handler_v2():
         The largest one will probably provide the the best resolution.
         This is not true if your monitor is a line of pixels arround the world.
         """
-        co=get_connected_outputs(x_display=self.display_strings[self.home_display_index])
+        co=get_connected_outputs(x_display=self.xdisplay_strings[self.home_xdisplay_index])
 
         # start values
         x,y = (int(i) for i in (co[0]['size']))
@@ -286,7 +296,7 @@ class Key_event_handler_v2():
         return floor((x1-x0)/2),floor((y1-y0)/2)
 
     def grab_mouse(self):
-        #d=self.displays[self.home_display_index]
+        #d=self.displays[self.home_xdisplay_index]
         #pixmap=Pixmap(d.display,d.display.allocate_resource_id())
         #pixmap=pixmap.create_pixmap(1,1,1)
         #cursor=pixmap.create_cursor(1,(1,1,1),(0,0,0),0,0)
@@ -299,11 +309,11 @@ class Key_event_handler_v2():
         retcode=self.root.grab_pointer(True,mask,X.GrabModeAsync,X.GrabModeAsync,X.NONE,X.NONE,X.CurrentTime)
         if not retcode==0:
             self.print_grab_error(retcode)
-        self.displays[self.home_display_index].sync()
+        self.displays[self.home_xdisplay_index].sync()
     
     def ungrab_mouse(self):
-        self.displays[self.home_display_index].ungrab_pointer(X.CurrentTime)
-        self.displays[self.home_display_index].sync()
+        self.displays[self.home_xdisplay_index].ungrab_pointer(X.CurrentTime)
+        self.displays[self.home_xdisplay_index].sync()
     
     def _is_display_switch(self,to_output_nr):
         o2d=self.outputnr2displaynr_list
@@ -311,10 +321,10 @@ class Key_event_handler_v2():
         return o2d[cur] != o2d[to_output_nr]
 
     def _outp_is_home(self,to_output_nr):
-        return self.outputnr2displaynr_list[to_output_nr] == self.home_display_index
+        return self.outputnr2displaynr_list[to_output_nr] == self.home_xdisplay_index
 
     def _dsw_is_leave_home_switch(self):
-        return self.outputnr2displaynr_list[self.current_output_nr] == self.home_display_index
+        return self.outputnr2displaynr_list[self.current_output_nr] == self.home_xdisplay_index
     
     def clear_keys(self,output_nr):
         for i in range(1,250):
@@ -361,27 +371,31 @@ class Key_event_handler_v2():
         else:
             return False
     
-    def _input_warp_center(self,from_pos):
-        x,y=self.warp_pos
+    def _input_warp_center(self):
+        #print(f"input center warp: {self.input_pos} -> {self.warp_pos}")
+        from_pos = self.input_pos
+        x,y = self.warp_pos
         delta_warp_x = self.warp_pos[0] - from_pos[0]
         delta_warp_y = self.warp_pos[1] - from_pos[1]
-        self.input_pos[0]+=delta_warp_x
-        self.input_pos[1]+=delta_warp_y
-        self.last_input_pos[0]+=delta_warp_x
-        self.last_input_pos[1]+=delta_warp_y
-        self.fake_input(0,X.MotionNotify,detail=0,x=x,y=y,root=self.root,msg="warp pointer")
-        self.displays[self.home_display_index].flush()
+        self.input_pos[0] += delta_warp_x
+        self.input_pos[1] += delta_warp_y
+        self.last_input_pos[0] += delta_warp_x
+        self.last_input_pos[1] += delta_warp_y
+        self.fake_input(self.home_xdisplay_index,X.MotionNotify,detail=0,x=x,y=y,root=self.root,msg="warp pointer")
+        self.displays[self.home_xdisplay_index].flush()
+        #print(f"last_inp={self.last_input_pos} cur_inp={self.input_pos}")
 
     def _interhome_warp_to(self,outp_nr,virt_pos):
         #dd(virt_pos)
         to_pos = self._virtPos2homePos(outp_nr,virt_pos)
         #dd(to_pos)
         x,y = to_pos
-        self.fake_input(0,X.MotionNotify,detail=0,x=x,y=y,msg="warp pointer")
-        self.displays[self.home_display_index].flush()
+        self.fake_input(self.home_xdisplay_index,X.MotionNotify,detail=0,x=x,y=y,msg="warp pointer")
+        self.displays[self.home_xdisplay_index].flush()
         self._input_pos_update(x,y)
 
     def switch2output(self,output_nr,to_left=False):
+        #print(f"sw2outp: cur={self.current_output_nr} req_outp={output_nr}")
         if self.current_output_nr==output_nr:
             # nothing to do
             return
@@ -403,10 +417,13 @@ class Key_event_handler_v2():
 
             if not self._outp_is_home(self.current_output_nr):
                 # sw from remote to home
+                #print("switching home")
                 self.ungrab_mouse()
         else:
             if self._outp_is_home(self.current_output_nr):
                 # sw from home to remote
+                #print("switching to remote")
+                self._input_warp_center()
                 self.grab_mouse()
 
         self.current_output_nr=output_nr
@@ -432,12 +449,13 @@ class Key_event_handler_v2():
         y=self.input_pos[1]
         dx = x - self.last_input_pos[0]
         dy = y - self.last_input_pos[1]
-        print(f'dx,dy = {dx,dy}')
+        #print(f'dx,dy = {dx,dy}')
+        # limit to virtual area
         self.virt_pos[0] = max(min(self.virt_pos[0] + dx, self.virtual_area[0]),0)
         self.virt_pos[1] = max(min(self.virt_pos[1] + dy, self.virtual_area[1]),0)
         
     def _is_home(self):
-        return self.outputnr2displaynr_list[self.current_output_nr] == self.home_display_index
+        return self.outputnr2displaynr_list[self.current_output_nr] == self.home_xdisplay_index
 
     def _homePos2virtPos(self,x,y):
         hon=self.outp_nr_2_home_outp_nr[self.current_output_nr]
@@ -467,11 +485,11 @@ class Key_event_handler_v2():
         y=remote_output_pos[1]+at_output_pos_y
         return (x,y)
 
-    def handle_home(self,event_type,time,x=0,y=0,detail=0):
+    def handle_home(self,event_type,time,detail=0):
         """
         """
         pos=self.switch_positions[self.current_output_nr]
-        #x,y=self.virt_pos
+        x,y=self.virt_pos
         #print(f'x,y= {x,y}')
         if pos[1][0] <= x:
             # switch right
@@ -491,7 +509,7 @@ class Key_event_handler_v2():
         y=self.input_pos[1]
 
         if not self._is_point_in_input_area(x,y):
-            self._input_warp_center((x,y))
+            self._input_warp_center()
 
         pos=self.switch_positions[self.current_output_nr]
         x,y=self.virt_pos
@@ -512,20 +530,18 @@ class Key_event_handler_v2():
 
     def handle(self,event_type,time,x=0,y=0,detail=0):
         global debug_event
-        print(f"output={self.current_output_nr}")
+        #print(f"output={self.current_output_nr}, pos = {self.virt_pos}")
         
         self._input_pos_update(x,y)
         self._update_pointer()
 
         if self._is_home():
-            print("is home")
-            self.handle_home(event_type,time,x=x,y=y,detail=detail)
+            #print("is home")
+            self.handle_home(event_type,time,detail=detail)
         else:
-            print("is remote")
+            #print("is remote")
             self.handle_remote(event_type,time,detail=detail)
 
-        dd(self.virt_pos)
-        
     def print_grab_error(self,retcode):
         if retcode in [ int(i) for i in self.grab_failcodes.keys() ]:                          
             pass
@@ -535,18 +551,18 @@ class Key_event_handler_v2():
             pass
 
     def _register_pointer_events(self):
-        xi.XISelectEvents( self.displays[self.home_display_index].display,
+        xi.XISelectEvents( self.displays[self.home_xdisplay_index].display,
                            opcode=self.xi_opcode,
                            window=self.root,
                            masks=[(self.pointerid,xi.ButtonReleaseMask|xi.ButtonPressMask|xi.MotionMask)])
-        self.displays[self.home_display_index].sync()
+        self.displays[self.home_xdisplay_index].sync()
 
     def _unregister_pointer_events(self):
-        xi.XISelectEvents( self.displays[self.home_display_index].display,
+        xi.XISelectEvents( self.displays[self.home_xdisplay_index].display,
                            opcode=self.xi_opcode,
                            window=self.root,
                            masks=[(self.pointerid , 0 )])
-        self.displays[self.home_display_index].sync()
+        self.displays[self.home_xdisplay_index].sync()
 
 def key_events_loop_v2(handler):
 
@@ -573,7 +589,7 @@ def key_events_loop_v2(handler):
         handler.handle( event_type,time,x=x,y=y,detail=detail)
 
     # loop
-    display=handler.displays[0]
+    display = handler.displays[handler.home_xdisplay_index]
     while True:
         event = display.next_event()
         if event is None:
@@ -584,6 +600,21 @@ def key_events_loop_v2(handler):
 if __name__=="__main__":
     #d0(quiet=True)
     #display.keysym_to_keycode(XK.string_to_keysym("1"))
+
+    screen_layout = parse_screen_layout_env_var_v3()
+    xdisplay_strings = [i['x_server'] for i in screen_layout]
+    home_xdisplay_index = xdisplay_strings.index(parse_display_var_v3())
+    layout2displaynrlist=layout2displaynr(layout=screen_layout)
+
+    ap=ArgumentParser()
+    ap.add_argument ("-i","--current-output-index",type=int,
+                    default = get_current_output_index  (
+                                                        layout = screen_layout,
+                                                        layout2displaynrlist = layout2displaynrlist
+                                                        )
+                    )
+    ap.add_argument( "-d", "--debug", action="store_true" )
+    args=ap.parse_args()
 
     kc_1 = 10
     kc_2 = 11
@@ -631,10 +662,12 @@ if __name__=="__main__":
     output_select_keybindings = [output_0_keybindings,output_1_keybindings,output_2_keybindings,output_3_keybindings]
     
     key_events_loop_v2( Key_event_handler_v2(
-                                                layout2displaynr(),
-                                                parse_display_var(), # home display
-                                                current_output_nr = 1,
-                                                output_select_keybindings = output_select_keybindings
+                                                layout2displaynrlist,
+                                                *xdisplay_strings,
+                                                current_output_nr = args.current_output_index,
+                                                home_xdisplay_index = home_xdisplay_index,
+                                                output_select_keybindings = output_select_keybindings,
+                                                debug=args.debug
                                             ))
 
-# vim: set foldmethod=indent foldlevel=0 foldnestmax=2 :
+# vim: set foldmethod=indent foldlevel=1 foldnestmax=5 :
