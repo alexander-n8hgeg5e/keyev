@@ -42,6 +42,7 @@ from time import time
 from Xlib.ext.xtest import fake_input
 from pylib.screen_utils.env import parse_screen_layout_env_var_v2
 from pylib.screen_utils.env import parse_screen_layout_env_var_v3
+from pylib.screen_utils.env import parse_display_var_v4
 from pylib.screen_utils.screen_utils import get_connected_output_count_at_env_layout_index_v2
 from pylib.screen_utils.screen_utils import get_connected_outputs
 from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v2
@@ -49,7 +50,6 @@ from pylib.screen_utils.screen_utils import env_screen_layout_2_region_layout_v3
 from pylib.screen_utils.screen_utils import layout2xpos_v2
 from pylib.screen_utils.screen_utils import layout2displaynr
 from pylib.screen_utils import get_current_output_index
-from pylib.screen_utils.env import parse_display_var_v3
 from math import floor
 from pprint import pprint
 from pylib.du import d0,d1,dd,ptb
@@ -603,7 +603,8 @@ if __name__=="__main__":
 
     screen_layout = parse_screen_layout_env_var_v3()
     xdisplay_strings = [i['x_server'] for i in screen_layout]
-    home_xdisplay_index = xdisplay_strings.index(parse_display_var_v3())
+    display_host,display_screen=parse_display_var_v4().values()
+    home_xdisplay_index = xdisplay_strings.index(display_host+":"+display_screen)
     layout2displaynrlist=layout2displaynr(layout=screen_layout)
 
     ap=ArgumentParser()
